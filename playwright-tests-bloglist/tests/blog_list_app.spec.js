@@ -82,15 +82,16 @@ describe('Blog app', () => {
           await page.locator('#author-input').fill('test author')
           await page.locator('#url-input').fill('test url')
           await page.getByRole('button', { name: 'create' }).click()
+          await page.getByText('test blog test author').waitFor()
         })
 
-        test('the new created blog can be liked', async () => {
+        test('the new created blog can be liked', async ({ page }) => {
           await page.getByRole('button', { name: 'view' }).click()
           await page.getByRole('button', { name: 'like' }).click()
           await expect(page.getByText('1')).toBeVisible()
         })
 
-        test('user who added the blog can delete the blog', async () => {
+        test('user who added the blog can delete the blog', async ({ page }) => {
           await page.getByRole('button', { name: 'view' }).click()
           page.on('dialog', dialog => dialog.accept())
           await page.getByRole('button', { name: 'remove' }).click()
@@ -101,18 +102,55 @@ describe('Blog app', () => {
           await expect(page.getByText('test blog test author')).not.toBeVisible()
         })
 
-        test('only the user who added the blog sees the blog delete button', async () => {
+        test('only the user who added the blog sees the blog delete button', async ({ page }) => {
           await page.getByRole('button', { name: 'logout' }).click()
 
           await page.getByTestId('username').fill('secondtester')
           await page.getByTestId('password').fill('secondtestpassword')
-
+          await page.getByRole('button', { name: 'login' }).click()
+          
           await page.getByRole('button', { name: 'view' }).click()
           await expect(page.getByRole('button', { name: 'remove' })).not.toBeVisible()
         })
 
-        test('blogs are arranged in the descending order according to the likes', async () => {
-          //...
+        test('blogs are arranged in the descending order according to the likes', async ({ page }) => {
+          await page.locator('#title-input').fill('second test blog')
+          await page.locator('#author-input').fill('second test author')
+          await page.locator('#url-input').fill('second test url')
+          await page.getByRole('button', { name: 'create' }).click()
+          await page.getByText('second test blog second test author').waitFor()
+
+          await page.locator('#title-input').fill('third test blog')
+          await page.locator('#author-input').fill('third test author')
+          await page.locator('#url-input').fill('third test url')
+          await page.getByRole('button', { name: 'create' }).click()
+          
+
+          await page.getByText('test blog test author').getByRole('button', { name: 'view' }).click()
+          await page.getByText('second test blog second test author').getByRole('button', { name: 'view' }).click()
+          await page.getByText('third test blog third test author').getByRole('button', { name: 'view' }).click()
+
+          await page.getByText('test blog test author').getByRole('button', { name: 'like' }).click()
+          await page.getByText('1').waitFor()
+
+          await page.getByText('second test blog second test author').getByRole('button', { name: 'like' }).click()
+          await page.getByText('1').waitFor()
+          await page.getByText('second test blog second test author').getByRole('button', { name: 'like' }).click()
+          await page.getByText('2').waitFor()
+          await page.getByText('second test blog second test author').getByRole('button', { name: 'like' }).click()
+          await page.getByText('3').waitFor()
+
+          await page.getByText('third test blog third test author').getByRole('button', { name: 'like' }).click()
+          await page.getByText('1').waitFor()
+          await page.getByText('third test blog third test author').getByRole('button', { name: 'like' }).click()
+          await page.getByText('2').waitFor()
+
+          const likeElements = await page.locator('.blog span').allTextContents()
+
+          const likeElementsInt = likeElements.map(l => parseInt(l, 10))
+
+          expect(likeElementsInt[0]).toBeGreaterThan(likeElementsInt[1])
+          expect(likeElementsInt[0]).toBeGreaterThan(likeElementsInt[1])
         })
       })
     })
